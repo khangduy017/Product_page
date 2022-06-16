@@ -1,6 +1,7 @@
 import './PRODUCT.css';
 import SideBar from './SideBar/SideBar'
 import Main from './Main/Main';
+import Cart from './Cart/Cart';
 import { useState } from 'react';
 
 export default function PRODUCT() {
@@ -10,7 +11,6 @@ export default function PRODUCT() {
     setClick(data)
   }
 
-
   return (
     <div className="PRODUCT">
       <div className="left">
@@ -18,6 +18,7 @@ export default function PRODUCT() {
       </div>
       <Main page={click} />
       <div className='right'>
+        <Cart />
       </div>
     </div>
   );
