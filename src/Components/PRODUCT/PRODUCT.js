@@ -1,7 +1,7 @@
 import './PRODUCT.css';
 import SideBar from './SideBar/SideBar'
 import Main from './Main/Main';
-import Cart from './Cart/Cart';
+import Cart from './Cart/Cart'
 import { useState } from 'react';
 
 export default function PRODUCT() {
@@ -9,17 +9,27 @@ export default function PRODUCT() {
 
   const handleClick = (data) => {
     setClick(data)
+    window.scrollTo(0, 0)
   }
+
+  // ======================================
+  const [clickCart, setClickCart] = useState([])
+  const handleCallBack = (data) => {
+    setClickCart(data)
+    console.log(data)
+  }
+  // ======================================
 
   return (
     <div className="PRODUCT">
       <div className="left">
         <SideBar className='sideBar' callBack={handleClick} />
       </div>
-      <Main page={click} />
+      <Main page={click} callBack={handleCallBack} />
       <div className='right'>
-        <Cart />
+        <Cart className='sectionCart' data={clickCart} />
       </div>
     </div>
   );
 }
+
