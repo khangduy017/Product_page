@@ -1,44 +1,15 @@
 import './PAY_PAGE.css'
 import React, { useState } from 'react'
 import ItemInCart from './ItemInCart/ItemInCart'
+import axios from 'axios'
+import Cookies from 'universal-cookie'
 
-// const test = [
-//   {
-//     amount: 1,
-//     src: '',
-//     name: 'Trà hibicus lựu đỏ',
-//     topping: 'Trân Châu Trắng',
-//     price: '46.000đ'
-//   },
-//   {
-//     amount: 2,
-//     src: '',
-//     name: 'Trà hibicus lựu xanh',
-//     topping: '',
-//     price: '46.000đ'
-//   },
-//   {
-//     amount: 3,
-//     src: '',
-//     name: 'Trà hibicus lựu vàng',
-//     topping: 'Trân Châu Trắng',
-//     price: '46.000đ'
-//   },
-//   {
-//     amount: 4,
-//     src: '',
-//     name: 'Trà hibicus lựu tím',
-//     topping: 'Trân Châu Trắng',
-//     price: '46.000đ'
-//   }
-// ]
+const cookie = new Cookies()
 
 function PAY_PAGE(props) {
   const [options, setOptions] = useState(1)
   const [method, setMethod] = useState(1)
-  const handleSetOptions = (data) => {
-    setOptions(data)
-  }
+
   const [listProducts, setListProducts] = useState(props.listProducts)
   const [total, setTotal] = useState(function () {
     let sum = 0
@@ -48,8 +19,7 @@ function PAY_PAGE(props) {
         let topping = 0
         if (listProducts[i].topping === 'Hương Vani' || listProducts[i].topping === 'Hương Hạt Dẻ') topping += 10
         else if (listProducts[i].topping === 'Trân Châu Trắng' || listProducts[i].topping === 'Thạch Cà Phê') topping += 7
-        sum += (listProducts[i].price.slice(0, -1) * 1 + topping) * listProducts[i].amount
-        console.log(sum)
+        sum += (listProducts[i].price.slice(0, -1) * 1 + topping) * listProducts[i].quantity
       }
     }
     return sum
@@ -90,7 +60,45 @@ function PAY_PAGE(props) {
     // }
   }
 
+  const sendCart = () => {
+    if (cookie.get("JWT")) {
+      const headers = {
+        'authorization': `Bearer ${cookie.get("JWT")}`
+      }
+      let cart = []
+      for (let i in listProducts) {
+        if (listProducts[i].quantity > 0) {
+          const object = {
+            "productName": listProducts[i].productName,
+            "image": listProducts[i].image,
+            "quantity": listProducts[i].quantity,
+            "topping": listProducts[i].topping,
+            "price": listProducts[i].price,
+            "note": listProducts[i].note
+          }
+          cart.push(object)
+        }
+      }
+      const object = {
+        'paymentMethods': paymentMethod,
+        'userName': name,
+        'phoneNumber': phone,
+        'userAddress': address,
+        'userNote': note,
+        'methodDelivery': methodDelivery,
+        'storeLocation': place,
+        'promotion': promotion,
+        'cart': cart,
+        'totalPrice': total
+      }
+      console.log(object)
+      axios.post('http://192.168.2.6:3000/tcf/v1/cart/shopping-cart', object, { headers: headers }).then((res) => {
 
+      }).catch(error => {
+        console.log(error)
+      })
+    }
+  }
 
   const listPlace = [
     '53H Nguyễn Du, Phường Bến Nghé, Quận 1, TP.HCM.',
@@ -114,14 +122,38 @@ function PAY_PAGE(props) {
     setPlace(data)
   }
 
+  const [paymentMethod, setPaymentMethod] = useState('Giao hàng trực tuyến')
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [note, setNote] = useState('')
+  const [methodDelivery, setMethodDelivery] = useState('Thanh toán khi nhận hàng')
+  const [promotion, setPromotion] = useState('')
+
+  const handleSetPaymentMethod = data => {
+    setOptions(data)
+    if (data === 1) setPaymentMethod('Giao hàng trực tuyến')
+    else setPaymentMethod('Nhận trực tiếp tại cửa hàng')
+  }
+  const enteredName = event => { setName(event.target.value) }
+  const enteredPhone = event => { setPhone(event.target.value) }
+  const enteredAddress = event => { setAddress(event.target.value) }
+  const enteredNote = event => { setNote(event.target.value) }
+  const handleSetMethod = data => {
+    setMethod(data)
+    if (data === 1) setMethodDelivery('Thanh toán khi nhận hàng')
+    else setMethodDelivery('Thanh toán qua ví momo')
+  }
+  const enteredPromotion = event => { setPromotion(event.target.value) }
+
   return (
     <div className='PAY_PAGE'>
       <div className='onlineDelivery'>
-        <button onClick={() => handleSetOptions(1)}
+        <button onClick={() => handleSetPaymentMethod(1)}
           className={`onlineDeliveryButton ${options === 1 && 'Choose'}`}>Giao hàng trực tuyến</button>
       </div>
       <div className='atStore'>
-        <button onClick={() => handleSetOptions(2)}
+        <button onClick={() => handleSetPaymentMethod(2)}
           className={`atStoreButton ${options === 2 && 'Choose'}`}>Nhận trực tiếp tại cửa hàng</button>
       </div>
       <div className='shipDetails'>
@@ -139,27 +171,27 @@ function PAY_PAGE(props) {
                 </clipPath>
               </defs>
             </svg>
-            <input className='inputT' placeholder='Họ và tên người nhận'></input>
+            <input onChange={enteredName} className='inputT' placeholder='Họ và tên người nhận'></input>
           </div>
           <div className='in'>
             <svg width="14" height="15" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M13.8519 16H10.5926C4.75241 16 0 10.8156 0 4.44444V0.888889C0 0.397778 0.36463 0 0.814815 0H4.88889C5.2637 0 5.58963 0.277777 5.67926 0.673333L6.49407 4.22889C6.58778 4.63333 6.41056 5.05333 6.06833 5.24L4.91333 5.86889C5.14352 8.38222 6.98296 10.3867 9.28685 10.64L9.86333 9.38C10.0344 9.00667 10.4194 8.81333 10.7902 8.91556L14.0494 9.80444C14.412 9.90444 14.6667 10.2578 14.6667 10.6667V15.1111C14.6667 15.6022 14.302 16 13.8519 16ZM1.62963 1.77778V4.44444C1.62963 9.83556 5.65074 14.2222 10.5926 14.2222H13.037V11.36L11.0285 10.8133L10.507 11.9533C10.3685 12.2533 10.0874 12.4444 9.77778 12.4444C6.18241 12.4444 3.25926 9.25333 3.25926 5.33333C3.25926 4.99556 3.43444 4.68889 3.70944 4.53778L4.75444 3.96889L4.25333 1.77778H1.62963Z" fill="black" />
             </svg>
-            <input className='inputT' placeholder='Số điện thoại người nhận'></input>
+            <input onChange={enteredPhone} className='inputT' placeholder='Số điện thoại người nhận'></input>
           </div>
           {options === 1 && <div className='in'>
             <svg width="12" height="16" viewBox="0 0 12 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M5.99995 16C5.79933 16 5.6062 15.914 5.46558 15.76C4.90683 15.152 0 9.724 0 6.4C0 2.872 2.6906 0 5.99995 0C9.3093 0 11.9999 2.872 11.9999 6.4C11.9999 9.724 7.09494 15.152 6.53432 15.76C6.3937 15.914 6.20057 16 5.99995 16ZM5.99995 1.6C3.51935 1.6 1.49999 3.754 1.49999 6.4C1.49999 8.416 4.37996 12.164 5.99995 14.038C7.61994 12.164 10.4999 8.418 10.4999 6.4C10.4999 3.754 8.48055 1.6 5.99995 1.6Z" fill="black" />
               <path d="M5.99997 9.59922C4.34624 9.59922 3 8.16322 3 6.39922C3 4.63522 4.34624 3.19922 5.99997 3.19922C7.65371 3.19922 8.99995 4.63522 8.99995 6.39922C8.99995 8.16322 7.65371 9.59922 5.99997 9.59922ZM5.99997 4.79922C5.17311 4.79922 4.49999 5.51722 4.49999 6.39922C4.49999 7.28122 5.17311 7.99922 5.99997 7.99922C6.82684 7.99922 7.49996 7.28122 7.49996 6.39922C7.49996 5.51722 6.82684 4.79922 5.99997 4.79922Z" fill="black" />
             </svg>
-            <input className='inputT' placeholder='Địa chỉ người nhận'></input>
+            <input onChange={enteredAddress} className='inputT' placeholder='Địa chỉ người nhận'></input>
           </div>}
           {options === 1 && <div className='in'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M0.855068 16C0.630559 16 0.412465 15.9124 0.249963 15.7499C0.0382835 15.5382 -0.0472436 15.2281 0.0254545 14.9373L0.880726 11.5163C0.919214 11.3666 0.996188 11.2276 1.10524 11.1186L9.65795 2.56584C9.99151 2.23228 10.5325 2.23228 10.8682 2.56584L13.434 5.13166C13.7675 5.46521 13.7675 6.00617 13.434 6.34187L4.88126 14.8946C4.77221 15.0036 4.63323 15.0827 4.48356 15.1191L1.06247 15.9744C0.99405 15.9915 0.92349 16 0.855068 16ZM2.48222 12.1599L2.03107 13.9688L3.83997 13.5155L11.6187 5.73676L10.2631 4.38116L2.48222 12.1599Z" fill="black" />
               <path d="M12.5787 -6.44937e-05L11.3691 1.20947L14.7906 4.63095L16.0002 3.42141L12.5787 -6.44937e-05Z" fill="black" />
             </svg>
-            <input className='inputT' placeholder='Ghi chú.......'></input>
+            <input onChange={enteredNote} className='inputT' placeholder='Ghi chú.......'></input>
           </div>}
         </div>
         <div className='time'>
@@ -167,13 +199,13 @@ function PAY_PAGE(props) {
         </div>
         <div className='titleT'>phương thức thanh toán</div>
         <div className='method'>
-          <div className='receive' onClick={() => setMethod(1)}>
+          <div className='receive' onClick={() => handleSetMethod(1)}>
             <svg className={`receiveIcon ${method === 1 && 'chooseIcon'}`} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="8" cy="8" r="8" />
             </svg>
             <p>Thanh toán khi nhận hàng</p>
           </div>
-          <div className='momo' onClick={() => setMethod(2)}>
+          <div className='momo' onClick={() => handleSetMethod(2)}>
             <svg className={`receiveIcon ${method === 2 && 'chooseIcon'}`} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="8" cy="8" r="8" />
             </svg>
@@ -249,7 +281,7 @@ function PAY_PAGE(props) {
             <path d="M10.2224 6.22222H8.00022C7.50911 6.22222 7.11133 5.82444 7.11133 5.33333V3.11111C7.11133 1.39556 8.50688 0 10.2224 0C11.938 0 13.3336 1.39556 13.3336 3.11111C13.3336 4.82667 11.938 6.22222 10.2224 6.22222ZM8.88911 4.44444H10.2224C10.958 4.44444 11.5558 3.84667 11.5558 3.11111C11.5558 2.37556 10.958 1.77778 10.2224 1.77778C9.48688 1.77778 8.88911 2.37556 8.88911 3.11111V4.44444Z" fill="black" />
             <path d="M8.88911 4.44434H7.11133V15.111H8.88911V4.44434Z" fill="black" />
           </svg>
-          <input className='inputT' placeholder='Mã khuyến mãi'></input>
+          <input onChange={enteredPromotion} className='inputT' placeholder='Mã khuyến mãi'></input>
         </div>
         <div className='titleT'>tổng đơn hàng</div>
         <div className='orderTotal'>
@@ -270,7 +302,7 @@ function PAY_PAGE(props) {
           </div>
         </div>
       </div>
-      <button onClick={() => handleSetOptions(2)} className='order'>đặt hàng</button>
+      <button onClick={sendCart} className='order'>đặt hàng</button>
     </div>
   )
 }
