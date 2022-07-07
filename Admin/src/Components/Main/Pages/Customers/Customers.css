@@ -1,0 +1,16 @@
+.Customer {
+  width: 100%;
+}
+
+.title {
+  font-size: 32px;
+  margin-bottom: 40px;
+}
+
+.list-title {
+  border: 2px solid #ced4da;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  color: #495057;
+}
